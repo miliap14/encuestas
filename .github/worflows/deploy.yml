@@ -1,0 +1,22 @@
+name: Deploy to Easypanel
+
+on:
+  push:
+    branches:
+      - main  # 👈 cambia esto a la rama que quieras
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Easypanel Deploy
+        run: |
+          curl -X POST "${{ secrets.EASYPANEL_URL }}/api/trpc/services.redeploy" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.EASYPANEL_API_TOKEN }}" \
+            -d '{
+              "json": {
+                "projectName": "${{ secrets.EASYPANEL_PROJECT }}",
+                "serviceName": "${{ secrets.EASYPANEL_SERVICE }}"
+              }
+            }'
