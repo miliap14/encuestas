@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Trigger Easypanel Deploy
         run: |
-          curl -X POST "${{ secrets.EASYPANEL_URL }}/api/trpc/services.redeploy" \
+          curl -X POST "${{ secrets.EASYPANEL_URL }}/api/trpc/services.refreshApp" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.EASYPANEL_API_TOKEN }}" \
             -d '{
