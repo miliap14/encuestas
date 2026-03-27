@@ -10,5 +10,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to Easypanel
-  run: |
-    curl -X POST "http://149.50.149.20:3000/api/deploy/0415acba30b14092445a86fe6c0ae796b254d1dc4a46ccdc"
+        run: |
+            curl -X POST "http://149.50.149.20:3000/api/deploy/0415acba30b14092445a86fe6c0ae796b254d1dc4a46ccdc"
