@@ -26,7 +26,8 @@ export const evolutionApi = {
 
   async connect() {
     const res = await fetch(`${API_URL}/instance/connect/${INSTANCE}`, {
-      headers: { apikey: API_KEY }
+      headers: { apikey: API_KEY },
+      cache: 'no-store'
     })
     return res.json()
   },

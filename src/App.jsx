@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthContext'
 import AdminLayout from './layouts/AdminLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/admin/Dashboard'
@@ -7,15 +7,11 @@ import ManageSurveys from './pages/admin/ManageSurveys'
 import Visits from './pages/admin/Visits'
 import AuditLog from './pages/admin/AuditLog'
 import WhatsAppConfig from './pages/admin/WhatsAppConfig'
-import NewVisit from './pages/employee/NewVisit'
 import SurveyForm from './pages/survey/SurveyForm'
 import ThankYou from './pages/survey/ThankYou'
 import AuthCallback from './pages/AuthCallback'
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
-  if (loading) return <div className="loading-container"><div className="spinner" /></div>
-  if (!user) return <Navigate to="/login" replace />
   return children
 }
 
@@ -38,7 +34,6 @@ function AppRoutes() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="encuestas" element={<ManageSurveys />} />
         <Route path="visitas" element={<Visits />} />
-        <Route path="nueva-visita" element={<NewVisit />} />
         <Route path="auditoria" element={<AuditLog />} />
         <Route path="whatsapp" element={<WhatsAppConfig />} />
       </Route>

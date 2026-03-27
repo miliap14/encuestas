@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext'
 const navItems = [
   { to: '/dashboard', icon: '📊', label: 'Resumen' },
   { to: '/encuestas', icon: '📋', label: 'Gestionar Encuestas' },
-  { to: '/nueva-visita', icon: '🏛️', label: 'Visitas Ciudadanas' },
   { to: '/visitas', icon: '📁', label: 'Historial Visitas' },
   { to: '/auditoria', icon: '🔍', label: 'Registro de Auditoría' },
   { to: '/whatsapp', icon: '📱', label: 'WhatsApp' },
@@ -13,7 +12,7 @@ const navItems = [
 const topNavItems = [
   { to: '/dashboard', label: 'Tablero' },
   { to: '/encuestas', label: 'Encuestas' },
-  { to: '/nueva-visita', label: 'Visitas' },
+  { to: '/visitas', label: 'Visitas' },
   { to: '/whatsapp', label: 'Ajustes' },
 ]
 
@@ -48,12 +47,6 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-
-        <div className="sidebar-bottom">
-          <NavLink to="/nueva-visita" className="btn-new-survey">
-            + Nueva Visita
-          </NavLink>
-        </div>
 
         <div className="sidebar-footer">
           <a href="#" onClick={e => { e.preventDefault() }}>❓ Ayuda</a>

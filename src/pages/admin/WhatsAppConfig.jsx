@@ -37,7 +37,7 @@ export default function WhatsAppConfig() {
   async function startQrRefresh() {
     await fetchQr()
     clearInterval(intervalRef.current)
-    intervalRef.current = setInterval(fetchQr, 30000)
+    intervalRef.current = setInterval(fetchQr, 10000)
   }
 
   async function fetchQr() {
@@ -175,7 +175,7 @@ export default function WhatsAppConfig() {
                 <img src={qrCode} alt="QR Code WhatsApp" />
                 <p style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--gray-600)', textAlign: 'center' }}>
                   Escaneá este código con WhatsApp.
-                  <br />Se actualiza cada 30 segundos.
+                  <br />Se actualiza cada 10 segundos.
                 </p>
               </div>
             ) : (
