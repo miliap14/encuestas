@@ -22,14 +22,10 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signInWithOAuth = async () => {
-    const { error } = await supabaseEncuestas.auth.signInWithOAuth({
-      provider: 'keycloak',
-      options: {
-        redirectTo: `${import.meta.env.VITE_APP_URL}/auth/callback`,
-      },
-    })
+  const signIn = async (email, password) => {
+    const { data, error } = await supabaseEncuestas.auth.signInWithPassword({ email, password })
     if (error) throw error
+    return data
   }
 
   const signOut = async () => {
@@ -38,7 +34,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithOAuth, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   )

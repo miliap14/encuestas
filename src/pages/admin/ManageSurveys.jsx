@@ -1,19 +1,212 @@
 import { useState, useEffect } from 'react'
 import { supabaseEncuestas } from '../../lib/supabaseEncuestas'
+import StarRating from '../../components/StarRating'
+
+const TIPO_LABELS = {
+  estrellas: { icon: '★', label: 'Estrellas' },
+  texto: { icon: '✏️', label: 'Texto libre' },
+  multiple: { icon: '☑️', label: 'Selección múltiple' },
+}
+
+const emptyForm = { texto: '', categoria: '', tipo: 'estrellas', max_selecciones: 3 }
+
+function PreviewModal({ preguntas, onClose }) {
+  const [ratings, setRatings] = useState({})
+  const [textAnswers, setTextAnswers] = useState({})
+  const [multiAnswers, setMultiAnswers] = useState({})
+
+  useEffect(() => {
+    const r = {}, t = {}, m = {}
+    preguntas.forEach(p => {
+      const tipo = p.tipo || 'estrellas'
+      if (tipo === 'estrellas') r[p.id] = 0
+      if (tipo === 'texto') t[p.id] = ''
+      if (tipo === 'multiple') m[p.id] = []
+    })
+    setRatings(r)
+    setTextAnswers(t)
+    setMultiAnswers(m)
+  }, [preguntas])
+
+  function toggleMulti(preguntaId, opcionTexto, maxSel) {
+    const current = multiAnswers[preguntaId] || []
+    if (current.includes(opcionTexto)) {
+      setMultiAnswers({ ...multiAnswers, [preguntaId]: current.filter(o => o !== opcionTexto) })
+    } else if (current.length < maxSel) {
+      setMultiAnswers({ ...multiAnswers, [preguntaId]: [...current, opcionTexto] })
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+        zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px'
+      }}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        background: 'var(--gray-100)', borderRadius: 'var(--radius-lg)',
+        width: '100%', maxWidth: '480px', maxHeight: '90vh',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+      }}>
+        {/* Modal header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', borderBottom: '1px solid var(--gray-200)',
+          background: 'white'
+        }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Vista Previa
+            </div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--gray-600)', marginTop: '2px' }}>
+              Así verá el vecino la encuesta
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--gray-500)', lineHeight: 1 }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Survey content */}
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div style={{ background: 'var(--primary)', padding: '24px 20px', textAlign: 'center' }}>
+            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px' }}>
+              Justiniano Posse
+            </div>
+            <div style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, lineHeight: 1.4 }}>
+              Tu opinión nos ayuda a mejorar Justiniano Posse
+            </div>
+            <div style={{
+              display: 'inline-block', marginTop: '12px', background: 'rgba(255,255,255,0.15)',
+              color: 'white', fontSize: '0.8rem', padding: '4px 12px', borderRadius: '20px'
+            }}>
+              🔒 Completamente Anónima
+            </div>
+          </div>
+
+          <div style={{ padding: '16px' }}>
+            {preguntas.filter(p => p.activo).map(p => {
+              const tipo = p.tipo || 'estrellas'
+              return (
+                <div key={p.id} style={{
+                  background: 'white', borderRadius: 'var(--radius-md)',
+                  padding: '20px', marginBottom: '12px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+                }}>
+                  {p.categoria && (
+                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                      {p.categoria}
+                    </div>
+                  )}
+                  <div style={{ fontWeight: 600, color: 'var(--navy-900)', marginBottom: '12px', lineHeight: 1.4 }}>
+                    {p.texto}
+                  </div>
+
+                  {tipo === 'estrellas' && (
+                    <StarRating
+                      value={ratings[p.id] || 0}
+                      onChange={val => setRatings({ ...ratings, [p.id]: val })}
+                      max={p.max_estrellas}
+                    />
+                  )}
+
+                  {tipo === 'texto' && (
+                    <textarea
+                      className="form-control"
+                      placeholder="Escribí tu respuesta..."
+                      value={textAnswers[p.id] || ''}
+                      onChange={e => setTextAnswers({ ...textAnswers, [p.id]: e.target.value })}
+                      style={{ marginTop: '4px' }}
+                    />
+                  )}
+
+                  {tipo === 'multiple' && (
+                    <div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', marginBottom: '8px' }}>
+                        Seleccioná hasta {p.max_selecciones} opciones
+                      </div>
+                      {(p.pregunta_opciones || []).sort((a, b) => a.orden - b.orden).map(op => {
+                        const selected = (multiAnswers[p.id] || []).includes(op.texto)
+                        const maxReached = (multiAnswers[p.id] || []).length >= p.max_selecciones
+                        return (
+                          <label key={op.id} style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '6px 0', cursor: (!selected && maxReached) ? 'not-allowed' : 'pointer',
+                            opacity: (!selected && maxReached) ? 0.4 : 1
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              disabled={!selected && maxReached}
+                              onChange={() => toggleMulti(p.id, op.texto, p.max_selecciones)}
+                            />
+                            {op.texto}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Comment field */}
+            <div style={{
+              background: 'white', borderRadius: 'var(--radius-md)',
+              padding: '20px', marginBottom: '12px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
+            }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-400)', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Opcional
+              </div>
+              <div style={{ fontWeight: 600, color: 'var(--navy-900)', marginBottom: '12px' }}>
+                ¿Querés dejarnos un comentario?
+              </div>
+              <textarea className="form-control" placeholder="Escribí acá tu comentario..." readOnly />
+            </div>
+
+            <button
+              style={{
+                width: '100%', padding: '14px', background: 'var(--primary)',
+                color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                fontWeight: 700, fontSize: '1rem', cursor: 'default', marginBottom: '16px'
+              }}
+            >
+              Enviar Opinión ➤
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ManageSurveys() {
   const [preguntas, setPreguntas] = useState([])
   const [config, setConfig] = useState({ activo: true, dias_expiracion: 7 })
-  const [form, setForm] = useState({ texto: '', categoria: '' })
+  const [form, setForm] = useState(emptyForm)
+  const [opciones, setOpciones] = useState([])
+  const [newOpcion, setNewOpcion] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
 
   useEffect(() => { load() }, [])
 
   async function load() {
     const { data: p } = await supabaseEncuestas
-      .from('preguntas').select('*').order('orden').order('created_at')
+      .from('preguntas')
+      .select('*, pregunta_opciones(id, texto, orden)')
+      .order('orden')
+      .order('created_at')
     setPreguntas(p || [])
 
     const { data: c } = await supabaseEncuestas
@@ -22,31 +215,76 @@ export default function ManageSurveys() {
     setLoading(false)
   }
 
+  async function moveQuestion(index, direction) {
+    const newList = [...preguntas]
+    const swapIndex = index + direction
+    if (swapIndex < 0 || swapIndex >= newList.length) return
+
+    ;[newList[index], newList[swapIndex]] = [newList[swapIndex], newList[index]]
+
+    setPreguntas(newList)
+    await Promise.all(
+      newList.map((p, i) =>
+        supabaseEncuestas.from('preguntas').update({ orden: i + 1 }).eq('id', p.id)
+      )
+    )
+  }
+
+  function addOpcion() {
+    if (!newOpcion.trim()) return
+    setOpciones([...opciones, newOpcion.trim()])
+    setNewOpcion('')
+  }
+
+  function removeOpcion(i) {
+    setOpciones(opciones.filter((_, idx) => idx !== i))
+  }
+
   async function handleSave() {
     if (!form.texto.trim()) return
+    if (form.tipo === 'multiple' && opciones.length < 2) {
+      alert('Agregá al menos 2 opciones para una pregunta de selección múltiple.')
+      return
+    }
     setSaving(true)
 
-    if (editingId) {
-      await supabaseEncuestas.from('preguntas')
-        .update({ texto: form.texto, categoria: form.categoria, updated_at: new Date().toISOString() })
-        .eq('id', editingId)
+    const payload = {
+      texto: form.texto,
+      categoria: form.categoria,
+      tipo: form.tipo,
+      max_selecciones: form.tipo === 'multiple' ? form.max_selecciones : null,
+      updated_at: new Date().toISOString(),
+    }
 
+    let preguntaId = editingId
+
+    if (editingId) {
+      await supabaseEncuestas.from('preguntas').update(payload).eq('id', editingId)
       await supabaseEncuestas.from('audit_log').insert({
         accion: 'editar_pregunta', tabla: 'preguntas', registro_id: String(editingId),
-        detalles: { texto: form.texto, categoria: form.categoria }
+        detalles: payload
       })
     } else {
       const orden = preguntas.length + 1
-      await supabaseEncuestas.from('preguntas')
-        .insert({ texto: form.texto, categoria: form.categoria, orden })
-
+      const { data: nueva } = await supabaseEncuestas
+        .from('preguntas').insert({ ...payload, orden }).select().single()
+      preguntaId = nueva.id
       await supabaseEncuestas.from('audit_log').insert({
         accion: 'crear_pregunta', tabla: 'preguntas',
-        detalles: { texto: form.texto, categoria: form.categoria }
+        detalles: payload
       })
     }
 
-    setForm({ texto: '', categoria: '' })
+    await supabaseEncuestas.from('pregunta_opciones').delete().eq('pregunta_id', preguntaId)
+    if (form.tipo === 'multiple' && opciones.length > 0) {
+      await supabaseEncuestas.from('pregunta_opciones').insert(
+        opciones.map((texto, i) => ({ pregunta_id: preguntaId, texto, orden: i }))
+      )
+    }
+
+    setForm(emptyForm)
+    setOpciones([])
+    setNewOpcion('')
     setEditingId(null)
     setSaving(false)
     load()
@@ -80,7 +318,23 @@ export default function ManageSurveys() {
 
   function startEdit(p) {
     setEditingId(p.id)
-    setForm({ texto: p.texto, categoria: p.categoria || '' })
+    setForm({
+      texto: p.texto,
+      categoria: p.categoria || '',
+      tipo: p.tipo || 'estrellas',
+      max_selecciones: p.max_selecciones || 3,
+    })
+    setOpciones(
+      (p.pregunta_opciones || []).sort((a, b) => a.orden - b.orden).map(o => o.texto)
+    )
+    setNewOpcion('')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setForm(emptyForm)
+    setOpciones([])
+    setNewOpcion('')
   }
 
   const activeCount = preguntas.filter(p => p.activo).length
@@ -89,10 +343,25 @@ export default function ManageSurveys() {
 
   return (
     <div>
+      {showPreview && (
+        <PreviewModal preguntas={preguntas} onClose={() => setShowPreview(false)} />
+      )}
+
       <div className="page-header">
-        <div className="overline">Administración</div>
-        <h1>Gestionar Encuestas</h1>
-        <p>Configurá las preguntas de las encuestas de satisfacción ciudadana y los parámetros del sistema.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div className="overline">Administración</div>
+            <h1>Gestionar Encuestas</h1>
+            <p>Configurá las preguntas de las encuestas de satisfacción ciudadana y los parámetros del sistema.</p>
+          </div>
+          <button
+            className="btn btn-outline"
+            onClick={() => setShowPreview(true)}
+            style={{ marginTop: '8px', whiteSpace: 'nowrap' }}
+          >
+            👁️ Vista Previa
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -105,10 +374,27 @@ export default function ManageSurveys() {
               </h3>
 
               <div className="form-group">
+                <label>Tipo de pregunta</label>
+                <select
+                  className="form-control"
+                  value={form.tipo}
+                  onChange={e => setForm({ ...form, tipo: e.target.value })}
+                >
+                  <option value="estrellas">★ Calificación con estrellas</option>
+                  <option value="texto">✏️ Respuesta de texto libre</option>
+                  <option value="multiple">☑️ Selección múltiple</option>
+                </select>
+              </div>
+
+              <div className="form-group">
                 <label>Texto de la pregunta</label>
                 <textarea
                   className="form-control"
-                  placeholder="Ej: ¿Qué tan satisfecho estás con la limpieza del parque?"
+                  placeholder={
+                    form.tipo === 'estrellas' ? 'Ej: ¿Qué tan satisfecho estás con la atención recibida?' :
+                    form.tipo === 'texto' ? 'Ej: En caso de no haber sido atendida tu solicitud, dejanos tu comentario' :
+                    'Ej: ¿En qué servicios deberíamos mejorar?'
+                  }
                   value={form.texto}
                   onChange={e => setForm({ ...form, texto: e.target.value })}
                 />
@@ -124,13 +410,68 @@ export default function ManageSurveys() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Escala de calificación</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                  <span style={{ color: 'var(--star-filled)', fontSize: '1.4rem' }}>★ ★ ★ ★ ★</span>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--gray-600)' }}>5 Estrellas</span>
+              {form.tipo === 'estrellas' && (
+                <div className="form-group">
+                  <label>Escala de calificación</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                    <span style={{ color: 'var(--star-filled)', fontSize: '1.4rem' }}>★ ★ ★ ★ ★</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--gray-600)' }}>5 Estrellas</span>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {form.tipo === 'multiple' && (
+                <>
+                  <div className="form-group">
+                    <label>Máximo de opciones seleccionables</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      min="1"
+                      max="10"
+                      value={form.max_selecciones}
+                      onChange={e => setForm({ ...form, max_selecciones: parseInt(e.target.value) || 1 })}
+                      style={{ width: '80px' }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Opciones</label>
+                    {opciones.map((op, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ flex: 1, fontSize: '0.9rem', padding: '6px 10px', background: 'var(--gray-50)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--gray-200)' }}>
+                          {op}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          onClick={() => removeOpcion(i)}
+                          style={{ color: 'var(--error)', padding: '4px 8px' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                      <input
+                        className="form-control"
+                        placeholder="Nueva opción..."
+                        value={newOpcion}
+                        onChange={e => setNewOpcion(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addOpcion())}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={addOpcion}
+                        disabled={!newOpcion.trim()}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
@@ -142,10 +483,7 @@ export default function ManageSurveys() {
                   {saving ? 'Guardando...' : editingId ? 'Actualizar' : 'Guardar Pregunta'}
                 </button>
                 {editingId && (
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => { setEditingId(null); setForm({ texto: '', categoria: '' }) }}
-                  >
+                  <button className="btn btn-outline" onClick={cancelEdit}>
                     Cancelar
                   </button>
                 )}
@@ -201,26 +539,56 @@ export default function ManageSurveys() {
                 <p>Usá el panel lateral para agregar nuevas preguntas a tu encuesta cívica.</p>
               </div>
             ) : (
-              preguntas.map((p, i) => (
-                <div key={p.id} className="question-item" style={{ opacity: p.activo ? 1 : 0.5 }}>
-                  <div className="question-number">{String(i + 1).padStart(2, '0')}</div>
-                  <div className="question-content">
-                    <h4>{p.texto}</h4>
-                    <div className="question-meta">
-                      <span>★ Escala de {p.max_estrellas} Estrellas</span>
-                      {p.categoria && <span>📁 {p.categoria}</span>}
-                      <span>Actualizado: {new Date(p.updated_at).toLocaleDateString('es-AR')}</span>
+              preguntas.map((p, i) => {
+                const tipo = p.tipo || 'estrellas'
+                const tipoInfo = TIPO_LABELS[tipo]
+                return (
+                  <div key={p.id} className="question-item" style={{ opacity: p.activo ? 1 : 0.5 }}>
+                    {/* Order buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px' }}>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => moveQuestion(i, -1)}
+                        disabled={i === 0}
+                        style={{ padding: '2px 6px', fontSize: '0.75rem', opacity: i === 0 ? 0.2 : 1 }}
+                      >
+                        ▲
+                      </button>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => moveQuestion(i, 1)}
+                        disabled={i === preguntas.length - 1}
+                        style={{ padding: '2px 6px', fontSize: '0.75rem', opacity: i === preguntas.length - 1 ? 0.2 : 1 }}
+                      >
+                        ▼
+                      </button>
+                    </div>
+
+                    <div className="question-number">{String(i + 1).padStart(2, '0')}</div>
+                    <div className="question-content">
+                      <h4>{p.texto}</h4>
+                      <div className="question-meta">
+                        <span>{tipoInfo.icon} {tipoInfo.label}
+                          {tipo === 'estrellas' && ` · ${p.max_estrellas} estrellas`}
+                          {tipo === 'multiple' && ` · hasta ${p.max_selecciones} opciones`}
+                        </span>
+                        {tipo === 'multiple' && p.pregunta_opciones?.length > 0 && (
+                          <span>{p.pregunta_opciones.length} opción{p.pregunta_opciones.length !== 1 ? 'es' : ''}</span>
+                        )}
+                        {p.categoria && <span>📁 {p.categoria}</span>}
+                        <span>Actualizado: {new Date(p.updated_at).toLocaleDateString('es-AR')}</span>
+                      </div>
+                    </div>
+                    <div className="question-actions">
+                      <button className="btn btn-outline btn-sm" onClick={() => startEdit(p)}>✏️</button>
+                      <button className="btn btn-outline btn-sm" onClick={() => toggleActive(p.id, p.activo)}>
+                        {p.activo ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                      <button className="btn btn-outline btn-sm" onClick={() => handleDelete(p.id)} style={{ color: 'var(--error)' }}>🗑️</button>
                     </div>
                   </div>
-                  <div className="question-actions">
-                    <button className="btn btn-outline btn-sm" onClick={() => startEdit(p)}>✏️</button>
-                    <button className="btn btn-outline btn-sm" onClick={() => toggleActive(p.id, p.activo)}>
-                      {p.activo ? '👁️' : '👁️‍🗨️'}
-                    </button>
-                    <button className="btn btn-outline btn-sm" onClick={() => handleDelete(p.id)} style={{ color: 'var(--error)' }}>🗑️</button>
-                  </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>

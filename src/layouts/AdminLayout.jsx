@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 const navItems = [
   { to: '/dashboard', icon: '📊', label: 'Resumen' },
   { to: '/encuestas', icon: '📋', label: 'Gestionar Encuestas' },
+  { to: '/areas', icon: '🏛️', label: 'Áreas y Secciones' },
   { to: '/visitas', icon: '📁', label: 'Historial Visitas' },
   { to: '/auditoria', icon: '🔍', label: 'Registro de Auditoría' },
   { to: '/whatsapp', icon: '📱', label: 'WhatsApp' },
@@ -31,7 +32,7 @@ export default function AdminLayout() {
     <div className="admin-layout">
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <h2>Civic Horizon</h2>
+          <h2>Administración Encuestas</h2>
           <p>Portal de Administración</p>
         </div>
 

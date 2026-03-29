@@ -8,6 +8,8 @@ export default function SurveyForm() {
   const navigate = useNavigate()
   const [preguntas, setPreguntas] = useState([])
   const [ratings, setRatings] = useState({})
+  const [textAnswers, setTextAnswers] = useState({})
+  const [multiAnswers, setMultiAnswers] = useState({})
   const [comentario, setComentario] = useState('')
   const [visita, setVisita] = useState(null)
   const [config, setConfig] = useState(null)
@@ -23,7 +25,6 @@ export default function SurveyForm() {
 
   async function loadSurvey() {
     try {
-      // Check if token is valid
       const { data: v, error: vErr } = await supabaseEncuestas
         .from('visitas')
         .select('*')
@@ -37,7 +38,6 @@ export default function SurveyForm() {
       }
       setVisita(v)
 
-      // Check already answered
       const { data: existing } = await supabaseEncuestas
         .from('respuestas')
         .select('id')
@@ -50,7 +50,6 @@ export default function SurveyForm() {
         return
       }
 
-      // Get config for expiration
       const { data: conf } = await supabaseEncuestas
         .from('encuesta_config')
         .select('*')
@@ -58,7 +57,6 @@ export default function SurveyForm() {
         .single()
       setConfig(conf)
 
-      // Check expiration
       if (conf) {
         const createdAt = new Date(v.created_at)
         const expiresAt = new Date(createdAt.getTime() + conf.dias_expiracion * 24 * 60 * 60 * 1000)
@@ -70,33 +68,38 @@ export default function SurveyForm() {
           return
         }
 
-        // Calculate time left
         const diff = expiresAt - now
         const days = Math.floor(diff / (1000 * 60 * 60 * 24))
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
         setTimeLeft(days > 0 ? `${days} día${days > 1 ? 's' : ''} y ${hours}h` : `${hours} horas`)
       }
 
-      // Check if surveys are active
       if (conf && !conf.activo) {
         setExpired(true)
         setLoading(false)
         return
       }
 
-      // Load active questions
       const { data: preg } = await supabaseEncuestas
         .from('preguntas')
-        .select('*')
+        .select('*, pregunta_opciones(id, texto, orden)')
         .eq('activo', true)
         .order('orden')
 
       setPreguntas(preg || [])
 
-      // Init ratings
       const initRatings = {}
-      preg?.forEach(p => { initRatings[p.id] = 0 })
+      const initText = {}
+      const initMulti = {}
+      preg?.forEach(p => {
+        const tipo = p.tipo || 'estrellas'
+        if (tipo === 'estrellas') initRatings[p.id] = 0
+        if (tipo === 'texto') initText[p.id] = ''
+        if (tipo === 'multiple') initMulti[p.id] = []
+      })
       setRatings(initRatings)
+      setTextAnswers(initText)
+      setMultiAnswers(initMulti)
 
     } catch (err) {
       console.error('Error loading survey:', err)
@@ -105,12 +108,20 @@ export default function SurveyForm() {
     setLoading(false)
   }
 
+  function toggleMultiOption(preguntaId, opcionTexto, maxSel) {
+    const current = multiAnswers[preguntaId] || []
+    if (current.includes(opcionTexto)) {
+      setMultiAnswers({ ...multiAnswers, [preguntaId]: current.filter(o => o !== opcionTexto) })
+    } else if (current.length < maxSel) {
+      setMultiAnswers({ ...multiAnswers, [preguntaId]: [...current, opcionTexto] })
+    }
+  }
+
   async function handleSubmit() {
     if (submitting) return
     setSubmitting(true)
 
     try {
-      // Create response
       const { data: resp, error } = await supabaseEncuestas
         .from('respuestas')
         .insert({
@@ -123,14 +134,19 @@ export default function SurveyForm() {
 
       if (error) throw error
 
-      // Create rating details
-      const detalles = Object.entries(ratings)
-        .filter(([, cal]) => cal > 0)
-        .map(([pregunta_id, calificacion]) => ({
-          respuesta_id: resp.id,
-          pregunta_id: parseInt(pregunta_id),
-          calificacion
-        }))
+      const detalles = preguntas.flatMap(p => {
+        const tipo = p.tipo || 'estrellas'
+        if (tipo === 'estrellas' && (ratings[p.id] || 0) > 0) {
+          return [{ respuesta_id: resp.id, pregunta_id: p.id, calificacion: ratings[p.id] }]
+        }
+        if (tipo === 'texto' && textAnswers[p.id]?.trim()) {
+          return [{ respuesta_id: resp.id, pregunta_id: p.id, respuesta_texto: textAnswers[p.id].trim() }]
+        }
+        if (tipo === 'multiple' && (multiAnswers[p.id] || []).length > 0) {
+          return [{ respuesta_id: resp.id, pregunta_id: p.id, opciones_seleccionadas: multiAnswers[p.id] }]
+        }
+        return []
+      })
 
       if (detalles.length > 0) {
         await supabaseEncuestas.from('respuesta_detalles').insert(detalles)
@@ -173,7 +189,13 @@ export default function SurveyForm() {
     )
   }
 
-  const answeredCount = Object.values(ratings).filter(r => r > 0).length
+  const hasAnyAnswer = preguntas.some(p => {
+    const tipo = p.tipo || 'estrellas'
+    if (tipo === 'estrellas') return (ratings[p.id] || 0) > 0
+    if (tipo === 'texto') return !!textAnswers[p.id]?.trim()
+    if (tipo === 'multiple') return (multiAnswers[p.id] || []).length > 0
+    return false
+  })
 
   return (
     <div className="survey-layout">
@@ -192,21 +214,70 @@ export default function SurveyForm() {
       </div>
 
       <div className="survey-body">
-        {preguntas.map(p => (
-          <div key={p.id} className="survey-question-card">
-            {p.categoria && (
-              <div className="question-category">{p.categoria}</div>
-            )}
-            <div className="question-text">{p.texto}</div>
-            <StarRating
-              value={ratings[p.id] || 0}
-              onChange={val => setRatings({ ...ratings, [p.id]: val })}
-              max={p.max_estrellas}
-            />
-          </div>
-        ))}
+        {preguntas.map(p => {
+          const tipo = p.tipo || 'estrellas'
+          return (
+            <div key={p.id} className="survey-question-card">
+              {p.categoria && <div className="question-category">{p.categoria}</div>}
+              <div className="question-text">{p.texto}</div>
 
-        {/* Optional comment */}
+              {tipo === 'estrellas' && (
+                <StarRating
+                  value={ratings[p.id] || 0}
+                  onChange={val => setRatings({ ...ratings, [p.id]: val })}
+                  max={p.max_estrellas}
+                />
+              )}
+
+              {tipo === 'texto' && (
+                <textarea
+                  className="form-control"
+                  placeholder="Escribí tu respuesta..."
+                  value={textAnswers[p.id] || ''}
+                  onChange={e => setTextAnswers({ ...textAnswers, [p.id]: e.target.value })}
+                  style={{ marginTop: '8px' }}
+                />
+              )}
+
+              {tipo === 'multiple' && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', marginBottom: '10px' }}>
+                    Seleccioná hasta {p.max_selecciones} opciones
+                    {(multiAnswers[p.id] || []).length > 0 &&
+                      ` · ${(multiAnswers[p.id] || []).length} elegida${(multiAnswers[p.id] || []).length > 1 ? 's' : ''}`
+                    }
+                  </div>
+                  {(p.pregunta_opciones || [])
+                    .sort((a, b) => a.orden - b.orden)
+                    .map(op => {
+                      const selected = (multiAnswers[p.id] || []).includes(op.texto)
+                      const maxReached = (multiAnswers[p.id] || []).length >= p.max_selecciones
+                      return (
+                        <label
+                          key={op.id}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '8px 0',
+                            cursor: (!selected && maxReached) ? 'not-allowed' : 'pointer',
+                            opacity: (!selected && maxReached) ? 0.4 : 1
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            disabled={!selected && maxReached}
+                            onChange={() => toggleMultiOption(p.id, op.texto, p.max_selecciones)}
+                          />
+                          {op.texto}
+                        </label>
+                      )
+                    })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+
         <div className="survey-question-card">
           <div className="question-category">Opcional</div>
           <div className="question-text">¿Querés dejarnos un comentario?</div>
@@ -228,7 +299,7 @@ export default function SurveyForm() {
         <button
           className="survey-submit-btn"
           onClick={handleSubmit}
-          disabled={submitting || answeredCount === 0}
+          disabled={submitting || !hasAnyAnswer}
         >
           {submitting ? 'Enviando...' : 'Enviar Opinión ➤'}
         </button>

@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Login() {
-  const { signInWithOAuth, user } = useAuth()
+  const { signIn, user } = useAuth()
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -13,14 +15,16 @@ export default function Login() {
     return null
   }
 
-  const handleLogin = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      await signInWithOAuth()
-      // El browser será redirigido a Authentik, no hay acción adicional aquí
+      await signIn(email, password)
+      navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión')
+    } finally {
       setLoading(false)
     }
   }
@@ -29,7 +33,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <h2>Civic Horizon</h2>
+          <h2>Administración Encuestas</h2>
           <p>Municipalidad de Justiniano Posse</p>
         </div>
         <h1>Iniciar Sesión</h1>
@@ -37,14 +41,40 @@ export default function Login() {
 
         {error && <div className="login-error">{error}</div>}
 
-        <button
-          onClick={handleLogin}
-          className="btn btn-primary btn-lg"
-          disabled={loading}
-          style={{ width: '100%', marginTop: '8px' }}
-        >
-          {loading ? 'Redirigiendo...' : 'Ingresar con Authentik'}
-        </button>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">Correo electrónico</label>
+            <input
+              id="email"
+              type="email"
+              className="form-control"
+              placeholder="tu@municipalidad.gob.ar"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Contraseña</label>
+            <input
+              id="password"
+              type="password"
+              className="form-control"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg"
+            disabled={loading}
+            style={{ width: '100%', marginTop: '8px' }}
+          >
+            {loading ? 'Ingresando...' : 'Ingresar'}
+          </button>
+        </form>
       </div>
     </div>
   )
