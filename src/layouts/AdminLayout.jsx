@@ -8,6 +8,7 @@ const navItems = [
   { to: '/visitas', icon: '📁', label: 'Historial Visitas' },
   { to: '/auditoria', icon: '🔍', label: 'Registro de Auditoría' },
   { to: '/whatsapp', icon: '📱', label: 'WhatsApp' },
+  { to: '/usuarios', icon: '👥', label: 'Usuarios' },
 ]
 
 const topNavItems = [

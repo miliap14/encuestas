@@ -8,6 +8,7 @@ import Visits from './pages/admin/Visits'
 import AuditLog from './pages/admin/AuditLog'
 import WhatsAppConfig from './pages/admin/WhatsAppConfig'
 import AreasConfig from './pages/admin/AreasConfig'
+import Usuarios from './pages/admin/Usuarios'
 import SurveyForm from './pages/survey/SurveyForm'
 import ThankYou from './pages/survey/ThankYou'
 
@@ -39,6 +40,7 @@ function AppRoutes() {
         <Route path="auditoria" element={<AuditLog />} />
         <Route path="areas" element={<AreasConfig />} />
         <Route path="whatsapp" element={<WhatsAppConfig />} />
+        <Route path="usuarios" element={<Usuarios />} />
       </Route>
     </Routes>
   )

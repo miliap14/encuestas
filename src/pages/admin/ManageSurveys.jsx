@@ -190,7 +190,7 @@ function PreviewModal({ preguntas, onClose }) {
 
 export default function ManageSurveys() {
   const [preguntas, setPreguntas] = useState([])
-  const [config, setConfig] = useState({ activo: true, dias_expiracion: 7 })
+  const [config, setConfig] = useState({ activo: true, dias_expiracion: 7, mensaje_whatsapp: '', mensaje_reenvio: '' })
   const [form, setForm] = useState(emptyForm)
   const [opciones, setOpciones] = useState([])
   const [newOpcion, setNewOpcion] = useState('')
@@ -198,6 +198,8 @@ export default function ManageSurveys() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [msgSaving, setMsgSaving] = useState(false)
+  const [msgDraft, setMsgDraft] = useState({ mensaje_whatsapp: '', mensaje_reenvio: '' })
 
   useEffect(() => { load() }, [])
 
@@ -211,7 +213,10 @@ export default function ManageSurveys() {
 
     const { data: c } = await supabaseEncuestas
       .from('encuesta_config').select('*').eq('id', 1).single()
-    if (c) setConfig(c)
+    if (c) {
+      setConfig(c)
+      setMsgDraft({ mensaje_whatsapp: c.mensaje_whatsapp ?? '', mensaje_reenvio: c.mensaje_reenvio ?? '' })
+    }
     setLoading(false)
   }
 
@@ -518,6 +523,68 @@ export default function ManageSurveys() {
                 />
                 <span style={{ fontSize: '0.85rem', color: 'var(--gray-600)' }}>Días</span>
               </div>
+            </div>
+          </div>
+
+          {/* Mensajes WhatsApp */}
+          <div className="card" style={{ marginTop: '20px' }}>
+            <div className="card-body">
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', color: 'var(--navy-900)' }}>
+                💬 Mensajes de WhatsApp
+              </h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--gray-500)', marginBottom: '16px', lineHeight: 1.5 }}>
+                Variables disponibles: <code style={{ background: 'var(--gray-100)', padding: '1px 6px', borderRadius: '4px' }}>{'{nombre}'}</code> <code style={{ background: 'var(--gray-100)', padding: '1px 6px', borderRadius: '4px' }}>{'{link}'}</code> <code style={{ background: 'var(--gray-100)', padding: '1px 6px', borderRadius: '4px' }}>{'{dias}'}</code>
+              </p>
+
+              <div className="form-group">
+                <label style={{ fontWeight: 600 }}>Mensaje inicial</label>
+                <p style={{ fontSize: '0.78rem', color: 'var(--gray-500)', marginBottom: '6px' }}>
+                  Se envía cuando se registra la visita del vecino.
+                </p>
+                <textarea
+                  className="form-control"
+                  rows={8}
+                  value={msgDraft.mensaje_whatsapp}
+                  onChange={e => setMsgDraft({ ...msgDraft, mensaje_whatsapp: e.target.value })}
+                  style={{ fontSize: '0.88rem', lineHeight: 1.5 }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label style={{ fontWeight: 600 }}>Mensaje de reenvío</label>
+                <p style={{ fontSize: '0.78rem', color: 'var(--gray-500)', marginBottom: '6px' }}>
+                  Se envía como recordatorio si el vecino no completó la encuesta.
+                </p>
+                <textarea
+                  className="form-control"
+                  rows={8}
+                  value={msgDraft.mensaje_reenvio}
+                  onChange={e => setMsgDraft({ ...msgDraft, mensaje_reenvio: e.target.value })}
+                  style={{ fontSize: '0.88rem', lineHeight: 1.5 }}
+                />
+              </div>
+
+              <button
+                className="btn btn-primary"
+                disabled={msgSaving || (msgDraft.mensaje_whatsapp === (config.mensaje_whatsapp ?? '') && msgDraft.mensaje_reenvio === (config.mensaje_reenvio ?? ''))}
+                onClick={async () => {
+                  setMsgSaving(true)
+                  await supabaseEncuestas.from('encuesta_config').update({
+                    mensaje_whatsapp: msgDraft.mensaje_whatsapp,
+                    mensaje_reenvio: msgDraft.mensaje_reenvio,
+                    updated_at: new Date().toISOString(),
+                  }).eq('id', 1)
+                  setConfig(c => ({ ...c, mensaje_whatsapp: msgDraft.mensaje_whatsapp, mensaje_reenvio: msgDraft.mensaje_reenvio }))
+                  await supabaseEncuestas.from('audit_log').insert({
+                    accion: 'actualizar_mensajes', tabla: 'encuesta_config',
+                    detalles: { mensaje_whatsapp: 'actualizado', mensaje_reenvio: 'actualizado' },
+                  })
+                  setMsgSaving(false)
+                }}
+                style={{ width: '100%' }}
+              >
+                {msgSaving ? 'Guardando...' : 'Guardar mensajes'}
+              </button>
             </div>
           </div>
         </div>

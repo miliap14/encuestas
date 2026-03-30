@@ -1,11 +1,36 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabaseEncuestas } from '../lib/supabaseEncuestas'
+
+const API_URL = import.meta.env.VITE_API_URL
+
+async function resolveAuthEmail(identifier) {
+  // Si no tiene @, es un DNI — construimos el email directamente
+  if (!identifier.includes('@')) {
+    return `${identifier.trim()}@munijposse.com.ar`
+  }
+
+  // Si ya es el email ficticio, lo usamos directamente
+  if (identifier.endsWith('@munijposse.com.ar')) {
+    return identifier.trim()
+  }
+
+  // Es un email real → pedimos al backend que lo resuelva
+  const res = await fetch(`${API_URL}/auth/resolve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier }),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error ?? 'No se encontró un usuario con ese email')
+  return json.email
+}
 
 export default function Login() {
-  const { signIn, user } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,7 +45,9 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await signIn(email, password)
+      const email = await resolveAuthEmail(identifier)
+      const { error: signInError } = await supabaseEncuestas.auth.signInWithPassword({ email, password })
+      if (signInError) throw signInError
       navigate('/dashboard')
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión')
@@ -28,6 +55,8 @@ export default function Login() {
       setLoading(false)
     }
   }
+
+  const isEmail = identifier.includes('@') && !identifier.endsWith('@munijposse.com.ar')
 
   return (
     <div className="login-page">
@@ -43,16 +72,22 @@ export default function Login() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Correo electrónico</label>
+            <label htmlFor="identifier">DNI o correo electrónico</label>
             <input
-              id="email"
-              type="email"
+              id="identifier"
+              type="text"
               className="form-control"
-              placeholder="tu@municipalidad.gob.ar"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              placeholder="DNI o correo"
+              value={identifier}
+              onChange={e => setIdentifier(e.target.value)}
+              autoComplete="username"
               required
             />
+            {isEmail && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)', marginTop: '4px' }}>
+                Se buscará el DNI asociado a este email
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label htmlFor="password">Contraseña</label>
@@ -63,6 +98,7 @@ export default function Login() {
               placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
+              autoComplete="current-password"
               required
             />
           </div>

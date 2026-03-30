@@ -240,8 +240,8 @@ export default function SurveyForm() {
               )}
 
               {tipo === 'multiple' && (
-                <div style={{ marginTop: '12px' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--gray-500)', marginBottom: '10px' }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--gray-500)', marginBottom: '12px' }}>
                     Seleccioná hasta {p.max_selecciones} opciones
                     {(multiAnswers[p.id] || []).length > 0 &&
                       ` · ${(multiAnswers[p.id] || []).length} elegida${(multiAnswers[p.id] || []).length > 1 ? 's' : ''}`
@@ -252,24 +252,18 @@ export default function SurveyForm() {
                     .map(op => {
                       const selected = (multiAnswers[p.id] || []).includes(op.texto)
                       const maxReached = (multiAnswers[p.id] || []).length >= p.max_selecciones
+                      const disabled = !selected && maxReached
                       return (
-                        <label
+                        <div
                           key={op.id}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '8px 0',
-                            cursor: (!selected && maxReached) ? 'not-allowed' : 'pointer',
-                            opacity: (!selected && maxReached) ? 0.4 : 1
-                          }}
+                          className={`survey-option ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`}
+                          onClick={() => !disabled && toggleMultiOption(p.id, op.texto, p.max_selecciones)}
                         >
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            disabled={!selected && maxReached}
-                            onChange={() => toggleMultiOption(p.id, op.texto, p.max_selecciones)}
-                          />
+                          <div className="survey-option-check">
+                            {selected && '✓'}
+                          </div>
                           {op.texto}
-                        </label>
+                        </div>
                       )
                     })}
                 </div>
