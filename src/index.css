@@ -768,6 +768,16 @@ select.form-control {
   text-align: center;
 }
 
+.login-success {
+  background: var(--success-light);
+  color: var(--success);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
 /* ====== SURVEY (Citizen View) ====== */
 /* ====== SURVEY (Mobile-first) ====== */
 .survey-layout {
