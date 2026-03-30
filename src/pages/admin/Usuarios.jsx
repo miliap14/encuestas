@@ -4,13 +4,10 @@ import { api } from '../../lib/api'
 
 const emptyForm = {
   numero_documento: '',
-  nombre: '', apellido: '', email: '', cargo: '',
-  password: '', confirmPassword: '', rol: '',
+  nombre: '', apellido: '', telefono: '', rol: '',
 }
 
-// Estado del modal según lo que se encontró al buscar por DNI
-// 'idle' | 'searching' | 'new_persona' | 'new_profile' | 'existing'
-const MODAL_STATE = { IDLE: 'idle', SEARCHING: 'searching', NEW_PERSONA: 'new_persona', NEW_PROFILE: 'new_profile', EXISTING: 'existing' }
+const MODAL_STATE = { IDLE: 'idle', SEARCHING: 'searching', NEW_PERSONA: 'new_persona', EXISTING: 'existing' }
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -50,7 +47,7 @@ export default function Usuarios() {
   }
 
   function handleDniChange(dni) {
-    setForm(f => ({ ...f, numero_documento: dni, nombre: '', apellido: '', email: '', cargo: '' }))
+    setForm(f => ({ ...f, numero_documento: dni, nombre: '', apellido: '', telefono: '' }))
     setFormError('')
 
     clearTimeout(dniTimeout.current)
@@ -78,15 +75,13 @@ export default function Usuarios() {
         return
       }
 
-      // Pre-llenar datos de la persona
       setForm(f => ({
         ...f,
         nombre: result.persona.nombre,
         apellido: result.persona.apellido,
-        email: result.persona.email ?? '',
       }))
 
-      setModalState(result.hasProfile ? MODAL_STATE.EXISTING : MODAL_STATE.NEW_PROFILE)
+      setModalState(MODAL_STATE.EXISTING)
     } catch {
       setModalState(MODAL_STATE.IDLE)
     }
@@ -99,21 +94,6 @@ export default function Usuarios() {
     if (!form.rol.trim()) {
       setFormError('El rol es obligatorio.')
       return
-    }
-
-    if (modalState === MODAL_STATE.NEW_PERSONA || modalState === MODAL_STATE.NEW_PROFILE) {
-      if (!form.email.trim() || !form.password) {
-        setFormError('Email y contraseña son obligatorios.')
-        return
-      }
-      if (form.password !== form.confirmPassword) {
-        setFormError('Las contraseñas no coinciden.')
-        return
-      }
-      if (form.password.length < 6) {
-        setFormError('La contraseña debe tener al menos 6 caracteres.')
-        return
-      }
     }
 
     if (modalState === MODAL_STATE.NEW_PERSONA) {
@@ -129,9 +109,7 @@ export default function Usuarios() {
         numero_documento: form.numero_documento,
         nombre: form.nombre || undefined,
         apellido: form.apellido || undefined,
-        email: form.email || undefined,
-        password: form.password || undefined,
-        cargo: form.cargo || undefined,
+        telefono: form.telefono || undefined,
         rol: form.rol,
       })
       setShowModal(false)
@@ -196,26 +174,14 @@ export default function Usuarios() {
   }
 
   const activeCount = users.filter(u => u.activo).length
+  const canSubmit = modalState === MODAL_STATE.NEW_PERSONA || modalState === MODAL_STATE.EXISTING
 
   const modalTitle = {
     [MODAL_STATE.IDLE]: 'Agregar usuario',
     [MODAL_STATE.SEARCHING]: 'Buscando...',
-    [MODAL_STATE.NEW_PERSONA]: 'Nuevo usuario',
-    [MODAL_STATE.NEW_PROFILE]: 'Dar acceso — nueva cuenta',
+    [MODAL_STATE.NEW_PERSONA]: 'Nueva persona',
     [MODAL_STATE.EXISTING]: 'Dar acceso',
   }
-
-  const modalHint = {
-    [MODAL_STATE.IDLE]: 'Ingresá el DNI para buscar al usuario.',
-    [MODAL_STATE.SEARCHING]: null,
-    [MODAL_STATE.NEW_PERSONA]: 'No existe ninguna persona con ese DNI. Completá los datos para crearla.',
-    [MODAL_STATE.NEW_PROFILE]: 'La persona existe pero aún no tiene cuenta. Completá email y contraseña.',
-    [MODAL_STATE.EXISTING]: 'La persona ya tiene cuenta. Solo elegí el rol para este sistema.',
-  }
-
-  const needsPersonaFields = modalState === MODAL_STATE.NEW_PERSONA
-  const needsAuthFields = modalState === MODAL_STATE.NEW_PERSONA || modalState === MODAL_STATE.NEW_PROFILE
-  const canSubmit = modalState !== MODAL_STATE.IDLE && modalState !== MODAL_STATE.SEARCHING
 
   return (
     <div>
@@ -328,6 +294,7 @@ export default function Usuarios() {
         )}
       </div>
 
+      {/* Modal agregar usuario */}
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal-container" style={{ maxWidth: '480px' }}>
@@ -338,12 +305,6 @@ export default function Usuarios() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 {formError && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{formError}</div>}
-
-                {modalHint[modalState] && (
-                  <p style={{ fontSize: '0.875rem', color: 'var(--gray-600)', marginBottom: '16px' }}>
-                    {modalHint[modalState]}
-                  </p>
-                )}
 
                 {/* DNI — siempre visible */}
                 <div className="form-group">
@@ -357,59 +318,57 @@ export default function Usuarios() {
                 </div>
 
                 {modalState === MODAL_STATE.SEARCHING && (
-                  <div style={{ textAlign: 'center', padding: '8px 0', color: 'var(--gray-500)', fontSize: '0.875rem' }}>
+                  <div style={{ textAlign: 'center', padding: '12px 0', color: 'var(--gray-500)', fontSize: '0.875rem' }}>
                     Buscando...
                   </div>
                 )}
 
-                {/* Datos de persona — solo si es nueva */}
-                {needsPersonaFields && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div className="form-group">
-                      <label>Nombre *</label>
-                      <input type="text" className="form-control" value={form.nombre}
-                        onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} required />
+                {/* Persona encontrada */}
+                {modalState === MODAL_STATE.EXISTING && (
+                  <div style={{ background: 'var(--success-light)', padding: '14px 16px', borderRadius: '8px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--success)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Persona encontrada
                     </div>
-                    <div className="form-group">
-                      <label>Apellido *</label>
-                      <input type="text" className="form-control" value={form.apellido}
-                        onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} required />
+                    <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--navy-900)' }}>
+                      {form.nombre} {form.apellido}
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--gray-600)', marginTop: '2px' }}>
+                      DNI {form.numero_documento}
                     </div>
                   </div>
                 )}
 
-                {/* Nombre/apellido pre-llenado (solo lectura) si la persona ya existe */}
-                {(modalState === MODAL_STATE.NEW_PROFILE || modalState === MODAL_STATE.EXISTING) && (
-                  <div style={{ background: 'var(--gray-50)', padding: '10px 14px', borderRadius: '8px', marginBottom: '12px', fontSize: '0.9rem' }}>
-                    <strong>{form.nombre} {form.apellido}</strong>
-                    {form.email && <div style={{ color: 'var(--gray-500)', fontSize: '0.82rem' }}>{form.email}</div>}
-                  </div>
-                )}
-
-                {/* Email + password — si necesita crear cuenta */}
-                {needsAuthFields && (
+                {/* Persona nueva — campos editables */}
+                {modalState === MODAL_STATE.NEW_PERSONA && (
                   <>
-                    <div className="form-group">
-                      <label>Email *</label>
-                      <input type="email" className="form-control" value={form.email}
-                        onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                    <div style={{ background: 'var(--warning-light)', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.85rem', color: 'var(--warning)' }}>
+                      No se encontró una persona con ese DNI. Completá los datos para crearla.
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                       <div className="form-group">
-                        <label>Contraseña *</label>
-                        <input type="password" className="form-control" placeholder="Mínimo 6 caracteres"
-                          value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required />
+                        <label>Nombre *</label>
+                        <input type="text" className="form-control" value={form.nombre}
+                          onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} required />
                       </div>
                       <div className="form-group">
-                        <label>Confirmar *</label>
-                        <input type="password" className="form-control"
-                          value={form.confirmPassword} onChange={e => setForm(f => ({ ...f, confirmPassword: e.target.value }))} required />
+                        <label>Apellido *</label>
+                        <input type="text" className="form-control" value={form.apellido}
+                          onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} required />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Celular</label>
+                      <input type="tel" className="form-control" placeholder="Ej: 3534123456"
+                        value={form.telefono}
+                        onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} />
+                      <div style={{ fontSize: '0.78rem', color: 'var(--gray-500)', marginTop: '4px' }}>
+                        Se usará para enviarle la contraseña por WhatsApp
                       </div>
                     </div>
                   </>
                 )}
 
-                {/* Rol — visible cuando se encontró/creó la persona */}
+                {/* Rol — visible cuando se puede crear */}
                 {canSubmit && (
                   <div className="form-group">
                     <label>Rol en este sistema *</label>
