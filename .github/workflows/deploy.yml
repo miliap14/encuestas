@@ -10,21 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Deploy Edge Functions al servidor
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 149.50.149.20
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            mkdir -p ${{ secrets.SSH_FUNCTIONS_PATH }}/manage-users
-            cat > ${{ secrets.SSH_FUNCTIONS_PATH }}/manage-users/index.ts << 'EDGE_FUNCTION'
-            $(cat supabase/functions/manage-users/index.ts)
-            EDGE_FUNCTION
-
       - name: Deploy app a Easypanel
         run: |
           curl -X POST "http://149.50.149.20:3000/api/deploy/0415acba30b14092445a86fe6c0ae796b254d1dc4a46ccdc"
