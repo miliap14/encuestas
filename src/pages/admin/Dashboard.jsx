@@ -27,9 +27,9 @@ export default function Dashboard() {
       const { count: totalResponses } = await supabaseEncuestas
         .from('respuestas').select('*', { count: 'exact', head: true })
 
-      // Average rating
+      // Average rating — solo detalles que tienen calificación (tipo estrellas)
       const { data: detalles } = await supabaseEncuestas
-        .from('respuesta_detalles').select('calificacion')
+        .from('respuesta_detalles').select('calificacion').not('calificacion', 'is', null)
 
       const avgRating = detalles?.length
         ? (detalles.reduce((s, d) => s + d.calificacion, 0) / detalles.length).toFixed(1)

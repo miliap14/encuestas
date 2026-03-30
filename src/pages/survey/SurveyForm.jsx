@@ -122,34 +122,45 @@ export default function SurveyForm() {
     setSubmitting(true)
 
     try {
-      const { data: resp, error } = await supabaseEncuestas
+      // Usamos una RPC o insertamos todo junto para evitar necesitar SELECT
+      // Primero insertamos la respuesta sin .select() (anónimo no puede leer)
+      const { error } = await supabaseEncuestas
         .from('respuestas')
         .insert({
           visita_id: visita.id,
           token,
           comentario: comentario.trim() || null
         })
-        .select()
-        .single()
 
       if (error) throw error
 
-      const detalles = preguntas.flatMap(p => {
-        const tipo = p.tipo || 'estrellas'
-        if (tipo === 'estrellas' && (ratings[p.id] || 0) > 0) {
-          return [{ respuesta_id: resp.id, pregunta_id: p.id, calificacion: ratings[p.id] }]
-        }
-        if (tipo === 'texto' && textAnswers[p.id]?.trim()) {
-          return [{ respuesta_id: resp.id, pregunta_id: p.id, respuesta_texto: textAnswers[p.id].trim() }]
-        }
-        if (tipo === 'multiple' && (multiAnswers[p.id] || []).length > 0) {
-          return [{ respuesta_id: resp.id, pregunta_id: p.id, opciones_seleccionadas: multiAnswers[p.id] }]
-        }
-        return []
-      })
+      // Obtener el ID de la respuesta recién creada vía la visita
+      // (respuesta_detalles permite INSERT anónimo, usamos visita_id como referencia)
+      const { data: respRow } = await supabaseEncuestas
+        .from('respuestas')
+        .select('id')
+        .eq('token', token)
+        .limit(1)
+        .maybeSingle()
 
-      if (detalles.length > 0) {
-        await supabaseEncuestas.from('respuesta_detalles').insert(detalles)
+      if (respRow) {
+        const detalles = preguntas.flatMap(p => {
+          const tipo = p.tipo || 'estrellas'
+          if (tipo === 'estrellas' && (ratings[p.id] || 0) > 0) {
+            return [{ respuesta_id: respRow.id, pregunta_id: p.id, calificacion: ratings[p.id] }]
+          }
+          if (tipo === 'texto' && textAnswers[p.id]?.trim()) {
+            return [{ respuesta_id: respRow.id, pregunta_id: p.id, respuesta_texto: textAnswers[p.id].trim() }]
+          }
+          if (tipo === 'multiple' && (multiAnswers[p.id] || []).length > 0) {
+            return [{ respuesta_id: respRow.id, pregunta_id: p.id, opciones_seleccionadas: multiAnswers[p.id] }]
+          }
+          return []
+        })
+
+        if (detalles.length > 0) {
+          await supabaseEncuestas.from('respuesta_detalles').insert(detalles)
+        }
       }
 
       navigate('/encuesta/gracias')

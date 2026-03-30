@@ -35,4 +35,7 @@ export const api = {
     resetPassword: (id, password) => request('PATCH', `/users/${id}/password`, { password }),
     delete: (id) => request('DELETE', `/users/${id}`),
   },
+  personas: {
+    bulkNames: (ids) => request('POST', '/personas/bulk', { ids }),
+  },
 }
