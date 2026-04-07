@@ -524,6 +524,20 @@ export default function ManageSurveys() {
                 <span style={{ fontSize: '0.85rem', color: 'var(--gray-600)' }}>Días</span>
               </div>
             </div>
+            <div className="config-row">
+              <span className="config-label">Demora de envío</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="number"
+                  min="0"
+                  max="48"
+                  value={config.horas_demora_envio ?? 0}
+                  onChange={e => updateConfig('horas_demora_envio', parseInt(e.target.value) || 0)}
+                  style={{ width: '60px', padding: '6px 10px', border: '1px solid var(--gray-300)', borderRadius: 'var(--radius-sm)', textAlign: 'center', fontWeight: 700 }}
+                />
+                <span style={{ fontSize: '0.85rem', color: 'var(--gray-600)' }}>Horas</span>
+              </div>
+            </div>
           </div>
 
           {/* Mensajes WhatsApp */}
