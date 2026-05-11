@@ -86,7 +86,17 @@ export default function SurveyForm() {
         .eq('activo', true)
         .order('orden')
 
-      setPreguntas(preg || [])
+      const preguntasConOpcionesRandom = (preg || []).map(p => {
+        if ((p.tipo || 'estrellas') !== 'multiple') return p
+        const opciones = [...(p.pregunta_opciones || [])]
+        for (let i = opciones.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[opciones[i], opciones[j]] = [opciones[j], opciones[i]]
+        }
+        return { ...p, pregunta_opciones: opciones }
+      })
+
+      setPreguntas(preguntasConOpcionesRandom)
 
       const initRatings = {}
       const initText = {}
@@ -258,9 +268,7 @@ export default function SurveyForm() {
                       ` · ${(multiAnswers[p.id] || []).length} elegida${(multiAnswers[p.id] || []).length > 1 ? 's' : ''}`
                     }
                   </div>
-                  {(p.pregunta_opciones || [])
-                    .sort((a, b) => a.orden - b.orden)
-                    .map(op => {
+                  {(p.pregunta_opciones || []).map(op => {
                       const selected = (multiAnswers[p.id] || []).includes(op.texto)
                       const maxReached = (multiAnswers[p.id] || []).length >= p.max_selecciones
                       const disabled = !selected && maxReached
