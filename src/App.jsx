@@ -10,6 +10,7 @@ import WhatsAppConfig from './pages/admin/WhatsAppConfig'
 import AreasConfig from './pages/admin/AreasConfig'
 import Usuarios from './pages/admin/Usuarios'
 import Respuestas from './pages/admin/Respuestas'
+import Informes from './pages/admin/Informes'
 import SurveyForm from './pages/survey/SurveyForm'
 import ThankYou from './pages/survey/ThankYou'
 
@@ -37,6 +38,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="respuestas" element={<Respuestas />} />
+        <Route path="informes" element={<Informes />} />
         <Route path="encuestas" element={<ManageSurveys />} />
         <Route path="visitas" element={<Visits />} />
         <Route path="auditoria" element={<AuditLog />} />

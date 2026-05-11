@@ -1539,3 +1539,265 @@ select.form-control {
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
+
+/* ============================================
+   Informes
+   ============================================ */
+.informes-page { padding-bottom: 32px; }
+
+.informe-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: var(--white);
+  border: 1px solid var(--gray-200, #E8E8F0);
+  border-radius: 12px;
+}
+
+.informe-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-btn {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--white);
+  color: var(--navy-900);
+  border: 1px solid var(--gray-200, #E8E8F0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.preset-btn:hover { border-color: var(--blue-500); }
+.preset-btn.active {
+  background: var(--navy-900);
+  color: var(--white);
+  border-color: var(--navy-900);
+}
+
+.informe-custom-range {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.informe-custom-range label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--gray-500, #B0B0C0);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  gap: 4px;
+}
+.informe-custom-range input[type="date"] {
+  padding: 6px 10px;
+  border: 1px solid var(--gray-200, #E8E8F0);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--navy-900);
+}
+
+.informe-toolbar .btn-primary {
+  margin-left: auto;
+  padding: 10px 20px;
+  background: var(--navy-900);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.informe-toolbar .btn-primary:hover { background: var(--navy-800); }
+.informe-toolbar .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.informe-doc {
+  background: var(--white);
+  border: 1px solid var(--gray-200, #E8E8F0);
+  border-radius: 12px;
+  padding: 36px 40px;
+}
+
+.informe-doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+  border-bottom: 2px solid var(--navy-900);
+}
+.informe-doc-brand h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--navy-900);
+  margin: 0 0 4px 0;
+}
+.informe-doc-brand p {
+  margin: 0;
+  color: var(--gray-500, #B0B0C0);
+  font-size: 0.9rem;
+}
+.informe-doc-meta {
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--gray-700, #4A5568);
+  line-height: 1.7;
+}
+.informe-doc-meta strong { color: var(--navy-900); }
+
+.informe-section {
+  margin-bottom: 32px;
+  page-break-inside: avoid;
+}
+.informe-section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--navy-900);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-left: 4px solid var(--blue-600);
+  padding-left: 12px;
+  margin: 0 0 16px 0;
+}
+
+.informe-global-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.informe-metric {
+  padding: 20px;
+  background: #F8FAFC;
+  border: 1px solid var(--gray-200, #E8E8F0);
+  border-radius: 10px;
+}
+.informe-metric-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gray-500, #B0B0C0);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.informe-metric-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--navy-900);
+  line-height: 1.1;
+}
+.informe-metric-value small {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gray-500, #B0B0C0);
+  margin-left: 4px;
+}
+.informe-metric-sub {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--blue-600);
+  font-weight: 600;
+}
+
+.informe-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.informe-table thead th {
+  background: var(--navy-900);
+  color: var(--white);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.informe-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gray-200, #E8E8F0);
+  color: var(--navy-900);
+}
+.informe-table tbody tr:nth-child(even) td { background: #F8FAFC; }
+.informe-table th.num, .informe-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.informe-table.compact td, .informe-table.compact th { padding: 6px 10px; font-size: 0.82rem; }
+
+.informe-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--gray-500, #B0B0C0);
+  font-style: italic;
+  background: #F8FAFC;
+  border-radius: 8px;
+}
+
+.informe-servicios {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: center;
+}
+.informe-servicios-chart {
+  display: flex;
+  justify-content: center;
+}
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.informe-doc-footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-200, #E8E8F0);
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--gray-500, #B0B0C0);
+}
+
+/* ============================================
+   Print styles
+   ============================================ */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  body { background: white !important; }
+
+  .sidebar, .topbar, .no-print { display: none !important; }
+  .admin-layout { display: block !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; }
+  .page-content { padding: 0 !important; }
+
+  .informe-doc {
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .informe-section { page-break-inside: avoid; }
+  .informe-section-servicios { page-break-before: auto; }
+  .informe-table { page-break-inside: auto; }
+  .informe-table tr { page-break-inside: avoid; page-break-after: auto; }
+  .informe-table thead { display: table-header-group; }
+
+  .informe-metric-value { font-size: 1.6rem; }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
