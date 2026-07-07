@@ -72,6 +72,9 @@ CREATE TABLE preguntas (
 );
 
 -- Visitas ciudadanas
+-- La tabla también funciona como cola de envío de la encuesta por WhatsApp:
+-- el worker (workerNotificaciones) recorre las filas pendientes, envía y
+-- actualiza aquí el estado. No hay Redis/colas externas.
 CREATE TABLE visitas (
   id SERIAL PRIMARY KEY,
   persona_id BIGINT NOT NULL,
@@ -81,10 +84,21 @@ CREATE TABLE visitas (
   prioridad TEXT DEFAULT 'normal' CHECK (prioridad IN ('normal', 'urgente')),
   empleado_id TEXT,
   encuesta_enviada BOOLEAN DEFAULT false,
+  encuesta_enviada_at TIMESTAMPTZ,
   encuesta_token TEXT UNIQUE,
   telefono_envio TEXT,
+  -- Estado de la "cola" de envío
+  envio_estado TEXT NOT NULL DEFAULT 'pendiente'
+    CHECK (envio_estado IN ('pendiente', 'enviando', 'enviada', 'fallida')),
+  envio_intentos INT NOT NULL DEFAULT 0,
+  envio_proximo_intento_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  envio_ultimo_error TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Índice para la consulta de la cola de envío
+CREATE INDEX idx_visitas_cola
+  ON visitas (envio_estado, envio_proximo_intento_at, created_at);
 
 -- Respuestas a encuestas (anónimas)
 CREATE TABLE respuestas (

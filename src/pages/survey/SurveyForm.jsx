@@ -58,8 +58,12 @@ export default function SurveyForm() {
       setConfig(conf)
 
       if (conf) {
-        const createdAt = new Date(v.created_at)
-        const expiresAt = new Date(createdAt.getTime() + conf.dias_expiracion * 24 * 60 * 60 * 1000)
+        // La expiración se cuenta desde el envío real (encuesta_enviada_at),
+        // no desde la fecha de la visita: así el ciudadano tiene los días
+        // completos desde que recibe el mensaje. Fallback a created_at para
+        // visitas previas a este cambio o sin timestamp de envío.
+        const base = new Date(v.encuesta_enviada_at ?? v.created_at)
+        const expiresAt = new Date(base.getTime() + conf.dias_expiracion * 24 * 60 * 60 * 1000)
         const now = new Date()
 
         if (now > expiresAt) {

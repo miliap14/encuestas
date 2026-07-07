@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react'
 import { supabaseEncuestas } from '../../lib/supabaseEncuestas'
 
+// Etiqueta del estado de envío de la encuesta. Usa envio_estado (nuevo) con
+// fallback al flag histórico encuesta_enviada. El título muestra el error.
+function estadoEnvio(v) {
+  const estado = v.envio_estado ?? (v.encuesta_enviada ? 'enviada' : 'pendiente')
+  switch (estado) {
+    case 'enviada':  return '✅ Enviada'
+    case 'enviando': return '📤 Enviando'
+    case 'fallida':  return <span title={v.envio_ultimo_error || ''}>❌ Falló</span>
+    case 'error':    return <span title={v.envio_ultimo_error || ''}>⏳ Reintentando</span>
+    default:         return '⏳ Pendiente'
+  }
+}
+
 export default function Visits() {
   const [visitas, setVisitas] = useState([])
   const [areas, setAreas] = useState([])
@@ -137,7 +150,7 @@ export default function Visits() {
                         {v.motivo || '—'}
                       </td>
                       <td><span className={`badge ${v.prioridad}`}>{v.prioridad}</span></td>
-                      <td>{v.encuesta_enviada ? '✅ Enviada' : '⏳ No enviada'}</td>
+                      <td>{estadoEnvio(v)}</td>
                       <td>
                         {resp
                           ? <span className={`badge ${resp.estado}`}>{resp.estado?.replace('_', ' ')}</span>

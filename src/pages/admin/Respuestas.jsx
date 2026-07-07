@@ -67,7 +67,7 @@ export default function Respuestas() {
     let query = supabaseEncuestas
       .from('visitas')
       .select(`
-        id, persona_id, area_id, encuesta_token, encuesta_enviada, created_at,
+        id, persona_id, area_id, encuesta_token, encuesta_enviada, encuesta_enviada_at, created_at,
         area:areas(descripcion),
         respuesta:respuestas(id, comentario, estado, created_at,
           detalles:respuesta_detalles(pregunta_id, calificacion, respuesta_texto, opciones_seleccionadas)
@@ -92,7 +92,9 @@ export default function Respuestas() {
       if (resp) {
         estado = 'respondida'
       } else {
-        const expires = new Date(new Date(v.created_at).getTime() + diasExp * 86400000)
+        // Expiración desde el envío real (fallback a created_at), igual que en la encuesta
+        const base = new Date(v.encuesta_enviada_at ?? v.created_at)
+        const expires = new Date(base.getTime() + diasExp * 86400000)
         if (now > expires) estado = 'expirada'
       }
       return { ...v, resp, estado }
